@@ -1,4 +1,8 @@
 require("dotenv").config();
+const moment = require("moment-timezone");
+
+const now = moment().tz("Asia/Ho_Chi_Minh").format("YYYY-MM-DD HH:mm:ss");
+
 const express = require("express");
 const fs = require("fs");
 const jwt = require('jsonwebtoken');
@@ -8,17 +12,6 @@ const https = require("https");
 const { Client } = require("pg");
 
 const app = express();
-
-// Đọc chứng chỉ SSL
-// const options = {
-//   key: fs.readFileSync('./ssl/ssl/server.key'),
-//   cert: fs.readFileSync('./ssl/ssl/server.cert')
-// };
-
-// const options = {
-//   key: fs.readFileSync("./192.168.10.87+2-key.pem"),
-//   cert: fs.readFileSync("./192.168.10.87+2.pem")
-// };
 
 const port = 3000;
 app.use(express.json()); // Middleware để Express có thể đọc body request dạng JSON
@@ -492,6 +485,58 @@ app.post("/orders", authenticate, async (req, res) => {
   }
 });
 
+app.get("/orders", authenticate, async (req, res) => {
+  try {
+    const result = await client.query("SELECT * FROM orders ORDER BY timestamp DESC");
+    res.json(result.rows); // Trả về danh sách đơn hàng
+  } catch (err) {
+    console.error("Lỗi khi truy vấn đơn hàng:", err);
+    res.status(500).json({ error: "Lỗi server" });
+  }
+});
+
+// API lấy sản phẩm theo productid
+app.get("/products/:id", authenticate, async (req, res) => {
+  const productid = req.params.id;
+
+  try {
+    const query = "SELECT * FROM public.products WHERE productid = $1";
+    const result = await client.query(query, [productid]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    res.json(result.rows[0]); // Trả về sản phẩm
+  } catch (err) {
+    console.error("Lỗi khi truy vấn sản phẩm:", err);
+    res.status(500).json({ error: "Lỗi server" });
+  }
+});
+
+// API xóa đơn hàng theo id
+app.delete("/orders/:id", authenticate, async (req, res) => {
+  const orderId = req.params.id;
+
+  try {
+    // Kiểm tra xem đơn hàng có tồn tại không
+    const checkQuery = "SELECT * FROM orders WHERE id = $1";
+    const checkResult = await client.query(checkQuery, [orderId]);
+
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    // Xóa đơn hàng
+    const deleteQuery = "DELETE FROM orders WHERE id = $1 RETURNING *";
+    const result = await client.query(deleteQuery, [orderId]);
+
+    res.status(200).json({ message: "Order deleted successfully", deletedOrder: result.rows[0] });
+  } catch (err) {
+    console.error("Lỗi khi xóa đơn hàng:", err);
+    res.status(500).json({ error: "Lỗi server" });
+  }
+});
 
 // Khởi chạy server
 app.listen(port, () => {

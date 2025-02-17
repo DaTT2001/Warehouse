@@ -35,10 +35,6 @@ client
   .then(() => console.log("Kết nối đến PostgreSQL thành công"))
   .catch((err) => console.error("Lỗi kết nối:", err));
 
-
-
-
-
 //Login, logout
 // Đăng nhập API
 app.post('/login', async (req, res) => {
@@ -117,8 +113,6 @@ const authorize = (roles) => {
     next(); // Nếu role hợp lệ, cho phép truy cập API
   };
 };
-
-
 
 // API protected chỉ có thể truy cập nếu đã đăng nhập và có token hợp lệ
 app.get('/protected', authenticate, (req, res) => {

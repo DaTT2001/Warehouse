@@ -1,7 +1,7 @@
 require("dotenv").config();
-const moment = require("moment-timezone");
+// const moment = require("moment-timezone");
 
-const now = moment().tz("Asia/Ho_Chi_Minh").format("YYYY-MM-DD HH:mm:ss");
+// const now = moment().tz("Asia/Ho_Chi_Minh").format("YYYY-MM-DD HH:mm:ss");
 
 const express = require("express");
 const fs = require("fs");
@@ -452,10 +452,10 @@ app.get("/logs", async (req, res) => {
 //api luu don orders
 
 app.post("/orders", authenticate, async (req, res) => {
-  const { employee_name, employee_id, role, productid, productname, quantity, type, timestamp } = req.body;
+  const { employee_name, employee_id, role, productid, productname, quantity, type, timestamp, erp_order_id } = req.body;
 
   // Kiểm tra dữ liệu đầu vào
-  if (!employee_name || !employee_id || !role || !productid || !productname || !quantity || !type) {
+  if (!employee_name || !employee_id || !role || !productid || !productname || !quantity || !type || !erp_order_id) {
     return res.status(400).json({ error: "Thiếu thông tin đơn hàng" });
   }
 
@@ -467,9 +467,9 @@ app.post("/orders", authenticate, async (req, res) => {
   try {
     // Lưu đơn hàng vào PostgreSQL
     await client.query(
-      `INSERT INTO orders (employee_name, employee_id, role, productid, productname, quantity, type, timestamp) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [employee_name, employee_id, role, productid, productname, quantity, type, timestamp || new Date().toISOString()]
+      `INSERT INTO orders (employee_name, employee_id, role, productid, productname, quantity, type, timestamp, erp_order_id) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [employee_name, employee_id, role, productid, productname, quantity, type, timestamp || new Date().toISOString(), erp_order_id]
     );
 
     res.status(201).json({ message: "Lưu đơn hàng thành công" });
@@ -478,6 +478,7 @@ app.post("/orders", authenticate, async (req, res) => {
     res.status(500).json({ error: "Lỗi server khi lưu đơn hàng" });
   }
 });
+
 
 app.get("/orders", authenticate, async (req, res) => {
   try {
